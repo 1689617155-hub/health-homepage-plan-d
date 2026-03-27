@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康首页 - 方案D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    background: #e8e8ed; display: flex; justify-content: center; padding: 20px 0; min-height: 100vh;
+  }
+
+  .phone {
+    width: 390px; height: 844px; background: #f2f2f7; border-radius: 44px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 0 0 3px #bbb, 0 20px 60px rgba(0,0,0,0.18);
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 30px 4px; font-size: 15px; font-weight: 600; color: #1c1c1e;
+  }
+  .statusbar-r { display: flex; gap: 5px; align-items: center; }
+  .statusbar-r svg { width: 16px; height: 16px; fill: #1c1c1e; }
+  .scroll { height: calc(844px - 50px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Header */
+  .hdr { padding: 6px 20px 6px; display: flex; justify-content: space-between; align-items: center; }
+  .hdr-title { font-size: 28px; font-weight: 700; color: #1c1c1e; }
+  .hdr-sub { font-size: 12px; color: #aeaeb2; margin-top: 1px; }
+  .hdr-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#c7d2fe,#ddd6fe);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+
+  /* ===== Goal Rings Strip (scrollable) ===== */
+  .goals-row { display: flex; align-items: center; padding: 10px 0 8px; }
+  .goals-scroll {
+    flex: 1; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory; padding: 4px 16px;
+    display: flex; gap: 14px;
+    scrollbar-width: none;
+  }
+  .goals-scroll::-webkit-scrollbar { display: none; }
+  .goal-item {
+    flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; cursor: pointer; padding: 6px 0; border-radius: 16px;
+    transition: all 0.15s; scroll-snap-align: start;
+  }
+  .goal-item:active { transform: scale(0.92); }
+  .goal-item .g-ring { width: 56px; height: 56px; position: relative; }
+  .goal-item .g-icon {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 17px; line-height: 1;
+  }
+  .goal-item .g-val-wrap {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: flex; align-items: baseline; gap: 1px; line-height: 1;
+  }
+  .goal-item .gv-num { font-size: 15px; font-weight: 700; color: #1c1c1e; }
+  .goal-item .gv-unit { font-size: 9px; font-weight: 500; color: #8e8e93; }
+  .goal-item .g-name { font-size: 11px; color: #6e6e73; font-weight: 500; }
+  .goals-edit-item {
+    flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 4px; cursor: pointer; padding: 6px 0; margin-right: 8px;
+  }
+  .goals-edit-item .ge-circle {
+    width: 56px; height: 56px; border-radius: 50%; border: 1.5px dashed #d1d1d6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #aeaeb2;
+  }
+  .goals-edit-item .ge-label { font-size: 11px; color: #aeaeb2; }
+
+  /* ===== Alert (两级) ===== */
+  .alert-bar {
+    margin: 4px 16px 8px; padding: 10px 14px; border-radius: 12px;
+    display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 1.45;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .alert-bar.warn { background: #fffbeb; color: #92400e; border-color: rgba(245,158,11,0.12); }
+  .alert-bar.danger { background: #fef2f2; color: #991b1b; border-color: rgba(239,68,68,0.15); }
+  .alert-icon { font-size: 14px; flex-shrink: 0; }
+  .alert-text { flex: 1; }
+  .alert-arrow { color: #d1d5db; flex-shrink: 0; }
+
+  /* 紧急预警 */
+  .alert-urgent {
+    margin: 4px 16px 8px; padding: 14px 16px; border-radius: 14px;
+    background: linear-gradient(135deg, #fef2f2, #fff1f2); border: 1.5px solid rgba(220,38,38,0.2);
+    cursor: pointer;
+  }
+  .alert-urgent-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .alert-urgent-badge {
+    padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+    background: #dc2626; color: #fff;
+  }
+  .alert-urgent-time { font-size: 11px; color: #aeaeb2; }
+  .alert-urgent-title { font-size: 15px; font-weight: 700; color: #991b1b; margin-bottom: 4px; }
+  .alert-urgent-desc { font-size: 13px; color: #7f1d1d; line-height: 1.5; margin-bottom: 10px; }
+  .alert-urgent-actions { display: flex; gap: 8px; }
+  .alert-urgent-btn {
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer;
+  }
+  .alert-urgent-btn.primary { background: #dc2626; color: #fff; }
+  .alert-urgent-btn.secondary { background: rgba(220,38,38,0.08); color: #dc2626; }
+
+  /* ===== Focus Story Card ===== */
+  .focus-card {
+    margin: 4px 16px 12px; background: #fff; border-radius: 20px;
+    padding: 22px 20px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .focus-top { margin-bottom: 12px; }
+  .focus-dim-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .focus-dim-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  .focus-dim-label { font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+  .focus-headline { font-size: 18px; font-weight: 700; color: #1c1c1e; line-height: 1.4; }
+
+  .focus-story { font-size: 13.5px; color: #6e6e73; line-height: 1.65; margin-bottom: 14px; }
+  .focus-story em { font-style: normal; font-weight: 600; color: #3a3a3c; }
+
+  /* ===== Focus Viz ===== */
+  .focus-viz { margin: 0 -4px 16px; padding: 14px 16px; background: #fafafa; border-radius: 14px; }
+  .focus-viz-title { font-size: 11px; color: #aeaeb2; font-weight: 600; margin-bottom: 10px; }
+
+  /* Sleep stages */
+  .sleep-viz-times { display: flex; justify-content: space-between; font-size: 10px; color: #aeaeb2; margin-bottom: 6px; }
+  .sleep-viz-times .late { color: #ef4444; font-weight: 600; }
+  .sleep-stages { display: flex; height: 28px; border-radius: 6px; overflow: hidden; gap: 1.5px; }
+  .sleep-stage { height: 100%; border-radius: 3px; }
+  .stage-awake { background: #fb923c; }
+  .stage-light { background: #93c5fd; }
+  .stage-deep { background: #1d4ed8; }
+  .stage-rem { background: #818cf8; }
+  .sleep-legend { display: flex; gap: 10px; margin-top: 8px; }
+  .sleep-legend-item { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #8e8e93; }
+  .sleep-legend-dot { width: 6px; height: 6px; border-radius: 2px; }
+
+  /* Status bars */
+  .status-bars { display: flex; flex-direction: column; gap: 8px; }
+  .status-bar-row { display: flex; align-items: center; gap: 8px; }
+  .sb-label { font-size: 11px; color: #6e6e73; width: 44px; flex-shrink: 0; }
+  .sb-track { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+  .sb-fill { height: 100%; border-radius: 4px; }
+  .sb-val { font-size: 11px; font-weight: 700; color: #1c1c1e; width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* Stress curve */
+  .stress-viz-labels { display: flex; justify-content: space-between; font-size: 9px; color: #aeaeb2; margin-top: 4px; }
+  .stress-now-label {
+    display: inline-block; padding: 2px 6px; background: #fef3c7; color: #d97706;
+    border-radius: 4px; font-size: 9px; font-weight: 600;
+  }
+
+  /* Exercise weekly bars */
+  .ex-week { display: flex; gap: 5px; align-items: flex-end; }
+  .ex-day { flex: 1; text-align: center; }
+  .ex-bar-wrap { height: 48px; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+  .ex-bar { width: 100%; border-radius: 4px 4px 2px 2px; min-height: 2px; }
+  .ex-day-label { font-size: 9px; color: #aeaeb2; margin-top: 4px; }
+  .ex-day-val { font-size: 9px; font-weight: 600; color: #3a3a3c; margin-top: 2px; }
+  .ex-target-line {
+    position: absolute; top: 0; left: -4px; right: -4px; border-top: 1.5px dashed #d1d5db;
+  }
+
+  /* Weight trend */
+  .wt-labels { display: flex; justify-content: space-between; font-size: 9px; color: #aeaeb2; margin-top: 4px; }
+  .wt-change {
+    display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 6px;
+  }
+  .wt-change.up { background: #fee2e2; color: #dc2626; }
+  .wt-change.down { background: #dcfce7; color: #16a34a; }
+
+  .focus-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .reason-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  }
+  .reason-chip.up { background: #ecfdf5; color: #065f46; }
+  .reason-chip.down { background: #fef2f2; color: #991b1b; }
+  .reason-chip.info { background: #f5f3ff; color: #5b21b6; }
+
+  .focus-cta {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 14px;
+  }
+  .focus-cta-icon {
+    width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .focus-cta-body { flex: 1; }
+  .focus-cta-title { font-size: 14px; font-weight: 600; color: #1c1c1e; }
+  .focus-cta-desc { font-size: 11px; color: #6e6e73; margin-top: 1px; }
+  .focus-cta-btn {
+    padding: 8px 18px; border-radius: 20px; border: none;
+    font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; flex-shrink: 0;
+  }
+  .focus-cta-btn:active { opacity: 0.85; transform: scale(0.96); }
+
+  /* ===== Record Reason (Aura style) ===== */
+  .focus-record {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; margin-top: 10px; border-radius: 12px;
+    background: #f9fafb; border: 1px dashed #e5e7eb; cursor: pointer;
+  }
+  .focus-record:active { background: #f3f4f6; }
+  .focus-record-icon { font-size: 16px; flex-shrink: 0; }
+  .focus-record-body { flex: 1; }
+  .focus-record-title { font-size: 13px; color: #6e6e73; }
+  .focus-record-title em { font-style: normal; color: #1c1c1e; font-weight: 600; }
+  .focus-record-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .focus-record-tag {
+    font-size: 11px; padding: 4px 10px; border-radius: 16px;
+    background: #fff; border: 1px solid #e5e7eb; color: #3a3a3c; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .focus-record-tag:active { background: #eef2ff; border-color: #a5b4fc; color: #4f46e5; }
+  .focus-record-tag.selected { background: #eef2ff; border-color: #a5b4fc; color: #4f46e5; font-weight: 600; }
+  .focus-record-arrow { font-size: 14px; color: #c7c7cc; flex-shrink: 0; }
+
+  /* ===== Today's Actions (cross-dimension) ===== */
+  .todo-section { padding: 0 16px 12px; }
+  .todo-title { font-size: 13px; font-weight: 600; color: #1c1c1e; margin-bottom: 8px; padding-left: 4px; }
+  .todo-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; background: #fff; border-radius: 14px;
+    margin-bottom: 6px; cursor: pointer; transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .todo-row:active { background: #f9f9f9; transform: scale(0.98); }
+  .todo-check {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 11px; color: #fff; transition: all 0.2s; cursor: pointer;
+  }
+  .todo-check.done { background: #10b981; border-color: #10b981; }
+  .todo-text { font-size: 13.5px; color: #1c1c1e; font-weight: 500; flex: 1; }
+  .todo-text.done { color: #aeaeb2; text-decoration: line-through; }
+  .todo-meta { font-size: 11px; color: #aeaeb2; }
+  .todo-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 6px; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* ===== Health Trend (compact) ===== */
+  .trend-card {
+    margin: 0 16px 10px; padding: 14px 16px; background: #fff; border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03); cursor: pointer;
+  }
+  .trend-row { display: flex; align-items: center; gap: 10px; }
+  .trend-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+    background: linear-gradient(135deg,#eef2ff,#f5f3ff); color: #6366f1; flex-shrink: 0;
+  }
+  .trend-text { flex: 1; font-size: 13px; color: #3a3a3c; line-height: 1.5; }
+  .trend-text em { font-style: normal; font-weight: 600; color: #1c1c1e; }
+  .trend-counts { display: flex; gap: 12px; margin-top: 8px; padding-left: 1px; }
+  .trend-count { font-size: 12px; color: #8e8e93; display: flex; align-items: center; gap: 4px; }
+  .trend-count .tc-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .trend-count .tc-dot.up { background: #34d399; }
+  .trend-count .tc-dot.down { background: #f87171; }
+  .trend-count .tc-num { font-weight: 700; }
+  .trend-count .tc-num.up { color: #059669; }
+  .trend-count .tc-num.down { color: #dc2626; }
+  .trend-arrow { font-size: 14px; color: #c7c7cc; flex-shrink: 0; }
+
+  /* ===== Streak ===== */
+  .streak {
+    margin: 0 16px 10px; padding: 12px 16px; background: #fff; border-radius: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  }
+  .streak-l { display: flex; align-items: center; gap: 8px; }
+  .streak-fire { font-size: 18px; }
+  .streak-title { font-size: 13px; font-weight: 600; color: #1c1c1e; }
+  .streak-sub { font-size: 11px; color: #aeaeb2; margin-top: 1px; }
+  .streak-dots { display: flex; gap: 3px; }
+  .sdot { width: 7px; height: 7px; border-radius: 50%; }
+  .sdot.on { background: #f59e0b; }
+  .sdot.now { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
+  .sdot.off { background: #e5e5ea; }
+
+  /* ===== Health Data (with charts) ===== */
+  .data-hdr { padding: 12px 20px 6px; font-size: 12px; color: #aeaeb2; font-weight: 600; letter-spacing: 0.5px; }
+  .data-grid { margin: 0 16px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .data-cell {
+    background: #fff; border-radius: 14px; padding: 12px 14px; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .data-cell:active { background: #f9f9f9; }
+  .dc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .dc-label-row { display: flex; align-items: center; gap: 6px; }
+  .dc-icon { font-size: 14px; }
+  .dc-name { font-size: 11px; color: #8e8e93; }
+  .dc-val { font-size: 18px; font-weight: 700; color: #1c1c1e; }
+  .dc-val .u { font-size: 10px; font-weight: 400; color: #aeaeb2; }
+  .dc-chart { height: 32px; margin-top: 4px; }
+  .dc-chart svg { display: block; width: 100%; height: 100%; }
+
+  /* ===== FAB ===== */
+  .fab {
+    position: absolute; bottom: 28px; right: 20px; width: 50px; height: 50px;
+    border-radius: 50%; background: linear-gradient(135deg,#1c1c1e,#3a3a3c);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 26px; font-weight: 300; border: none; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 100;
+  }
+  .fab:active { transform: scale(0.9); }
+  .fab-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    z-index: 90; display: none; flex-direction: column; justify-content: flex-end; padding-bottom: 100px;
+  }
+  .fab-overlay.show { display: flex; }
+  .fab-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 0 36px; }
+  .fab-item { width: 72px; text-align: center; cursor: pointer; }
+  .fab-item-icon {
+    width: 50px; height: 50px; border-radius: 14px; background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 6px; font-size: 22px;
+  }
+  .fab-item-label { font-size: 11px; color: #3a3a3c; }
+  .fab-close {
+    width: 44px; height: 44px; border-radius: 50%; background: #e5e5ea;
+    display: flex; align-items: center; justify-content: center;
+    margin: 20px auto 0; cursor: pointer; font-size: 18px; color: #3a3a3c;
+  }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+    background: rgba(28,28,30,0.88); color: #fff; padding: 10px 20px;
+    border-radius: 12px; font-size: 13px; font-weight: 500; z-index: 200;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== Demo Panel ===== */
+  .demo {
+    position: fixed; top: 20px; right: 20px; z-index: 999;
+    background: #fff; padding: 14px; border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1); max-width: 200px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .demo-title { font-size: 11px; color: #8e8e93; font-weight: 600; margin-bottom: 2px; }
+  .demo-btn {
+    padding: 8px 12px; border-radius: 10px; border: 1px solid #e5e5ea;
+    background: #fff; color: #3a3a3c; font-size: 12px; cursor: pointer;
+    text-align: left; transition: all 0.2s;
+  }
+  .demo-btn:hover { background: #f5f5fa; }
+  .demo-btn.active { background: #eef2ff; border-color: #818cf8; color: #4338ca; font-weight: 600; }
+  .demo-note { font-size: 10px; color: #c7c7cc; margin-top: 4px; line-height: 1.4; }
+
+  .fade { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="demo">
+  <div class="demo-title">模拟 AI 推荐场景</div>
+  <button class="demo-btn active" onclick="switchScene('sleep')">🌙 昨晚没睡好</button>
+  <button class="demo-btn" onclick="switchScene('status')">✨ 今天状态好</button>
+  <button class="demo-btn" onclick="switchScene('stress')">😮‍💨 压力飙高</button>
+  <button class="demo-btn" onclick="switchScene('exercise')">🏃 运动快达标</button>
+  <button class="demo-btn" onclick="switchScene('diet')">⚖️ 体重反弹了</button>
+  <button class="demo-btn" onclick="switchScene('risk_hr')" style="border-color:#fca5a5;color:#dc2626;">🚨 心率异常预警</button>
+  <div class="demo-note">模拟 AI 在不同场景下<br>自动选择焦点卡内容<br>（用户端无此面板）</div>
+</div>
+
+<div class="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="statusbar-r">
+      <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="hdr">
+      <div><div class="hdr-title">健康</div><div class="hdr-sub">周四上午好</div></div>
+      <div class="hdr-avatar">👤</div>
+    </div>
+
+    <!-- 目标环：可滑动，点击跳详情页 -->
+    <div class="goals-row">
+      <div class="goals-scroll" id="goalsStrip"></div>
+    </div>
+
+    <!-- 风险提醒 -->
+    <div id="alertArea"></div>
+
+    <!-- AI 焦点卡 -->
+    <div id="focusCard" class="focus-card fade"></div>
+
+    <!-- 今日待办：只放其他维度的建议 -->
+    <div class="todo-section">
+      <div class="todo-title">📋 顺手也做做</div>
+      <div id="todoList"></div>
+    </div>
+
+    <!-- 健康趋势（轻量版） -->
+    <div class="trend-card" onclick="showToast('查看完整健康趋势 →')">
+      <div class="trend-row">
+        <span class="trend-badge">AI</span>
+        <span class="trend-text">这周<em>运动量提升了 30%</em>，但睡眠规律性有点拉胯</span>
+        <span class="trend-arrow">›</span>
+      </div>
+      <div class="trend-counts">
+        <span class="trend-count"><span class="tc-dot up"></span><span class="tc-num up">3</span> 项改善</span>
+        <span class="trend-count"><span class="tc-dot down"></span><span class="tc-num down">2</span> 项需关注</span>
+      </div>
+    </div>
+
+    <!-- 连续打卡 -->
+    <div class="streak">
+      <div class="streak-l">
+        <span class="streak-fire">🔥</span>
+        <div><div class="streak-title">连续早睡 5 天</div><div class="streak-sub">再坚持 2 天解锁「早睡达人」</div></div>
+      </div>
+      <div class="streak-dots">
+        <div class="sdot on"></div><div class="sdot on"></div><div class="sdot on"></div>
+        <div class="sdot on"></div><div class="sdot now"></div><div class="sdot off"></div><div class="sdot off"></div>
+      </div>
+    </div>
+
+    <!-- 健康数据（带迷你图表） -->
+    <div class="data-hdr">健康数据</div>
+    <div class="data-grid">
+      <!-- 心率 -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">❤️</span><span class="dc-name">静息心率</span></div></div>
+        <div class="dc-val">72 <span class="u">bpm</span></div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32" fill="none"><polyline points="2,20 17,18 32,22 47,16 62,18 77,12 92,15 107,10 118,14" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="118" cy="14" r="2.5" fill="#f87171"/></svg></div>
+      </div>
+      <!-- 血氧 -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">🫁</span><span class="dc-name">血氧</span></div></div>
+        <div class="dc-val">97<span class="u">%</span></div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32" fill="none"><polyline points="2,8 17,7 32,9 47,6 62,8 77,7 92,8 107,6 118,7" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="118" cy="7" r="2.5" fill="#34d399"/></svg></div>
+      </div>
+      <!-- HRV -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">💚</span><span class="dc-name">HRV</span></div></div>
+        <div class="dc-val">45 <span class="u">ms</span></div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32"><rect x="2" y="18" width="12" height="14" rx="2" fill="#d1d5db"/><rect x="19" y="12" width="12" height="20" rx="2" fill="#d1d5db"/><rect x="36" y="8" width="12" height="24" rx="2" fill="#d1d5db"/><rect x="53" y="14" width="12" height="18" rx="2" fill="#d1d5db"/><rect x="70" y="6" width="12" height="26" rx="2" fill="#d1d5db"/><rect x="87" y="10" width="12" height="22" rx="2" fill="#d1d5db"/><rect x="104" y="4" width="12" height="28" rx="2" fill="#6ee7b7"/></svg></div>
+      </div>
+      <!-- 体温 -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">🌡️</span><span class="dc-name">体温</span></div></div>
+        <div class="dc-val">36.5<span class="u">°C</span></div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32" fill="none"><polyline points="2,16 17,15 32,16 47,14 62,15 77,16 92,15 107,14 118,15" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="118" cy="15" r="2.5" fill="#fb923c"/></svg></div>
+      </div>
+      <!-- ECG -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">🫀</span><span class="dc-name">ECG</span></div></div>
+        <div class="dc-val">窦性心律</div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32" fill="none"><polyline points="0,18 20,18 26,18 28,6 30,28 32,12 34,18 55,18 60,18 62,8 64,26 66,14 68,18 90,18 94,18 96,8 98,28 100,14 102,18 120,18" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <!-- 步数 -->
+      <div class="data-cell">
+        <div class="dc-top"><div class="dc-label-row"><span class="dc-icon">🚶</span><span class="dc-name">今日步数</span></div></div>
+        <div class="dc-val">6,280</div>
+        <div class="dc-chart"><svg viewBox="0 0 120 32"><rect x="2" y="20" width="14" height="12" rx="2" fill="#e5e7eb"/><rect x="20" y="14" width="14" height="18" rx="2" fill="#e5e7eb"/><rect x="38" y="8" width="14" height="24" rx="2" fill="#e5e7eb"/><rect x="56" y="16" width="14" height="16" rx="2" fill="#e5e7eb"/><rect x="74" y="10" width="14" height="22" rx="2" fill="#e5e7eb"/><rect x="92" y="6" width="14" height="26" rx="2" fill="#a78bfa"/></svg></div>
+      </div>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn" onclick="toggleFab()">+</button>
+  <div class="fab-overlay" id="fabOverlay">
+    <div class="fab-menu">
+      <div class="fab-item"><div class="fab-item-icon">☕</div><div class="fab-item-label">咖啡</div></div>
+      <div class="fab-item"><div class="fab-item-icon">🍺</div><div class="fab-item-label">饮酒</div></div>
+      <div class="fab-item"><div class="fab-item-icon">😰</div><div class="fab-item-label">压力大</div></div>
+      <div class="fab-item"><div class="fab-item-icon">🍽️</div><div class="fab-item-label">记饮食</div></div>
+      <div class="fab-item"><div class="fab-item-icon">💊</div><div class="fab-item-label">吃药</div></div>
+      <div class="fab-item"><div class="fab-item-icon">⚖️</div><div class="fab-item-label">称重</div></div>
+    </div>
+    <div class="fab-close" onclick="toggleFab()">✕</div>
+  </div>
+</div>
+
+<script>
+/* ===== 配色 ===== */
+const CLR = {
+  sleep:    { main:'#8b5cf6', bg:'#f5f3ff', track:'#ede9fe', tagBg:'#f5f3ff', tagColor:'#7c3aed' },
+  status:   { main:'#10b981', bg:'#ecfdf5', track:'#d1fae5', tagBg:'#ecfdf5', tagColor:'#059669' },
+  stress:   { main:'#f59e0b', bg:'#fffbeb', track:'#fef3c7', tagBg:'#fffbeb', tagColor:'#d97706' },
+  exercise: { main:'#3b82f6', bg:'#eff6ff', track:'#dbeafe', tagBg:'#eff6ff', tagColor:'#2563eb' },
+  diet:     { main:'#ec4899', bg:'#fdf2f8', track:'#fce7f3', tagBg:'#fdf2f8', tagColor:'#db2777' }
+};
+
+/* ===== 五个目标数据（五环用） ===== */
+const goals = {
+  sleep:    { icon:'🌙', name:'睡眠', num:'6.2', unit:'h',   useIcon:false, pct:0.68 },
+  status:   { icon:'✨', name:'状态', num:'78',  unit:'分',   useIcon:false, pct:0.78 },
+  stress:   { icon:'😮‍💨', name:'压力', num:'',    unit:'',    useIcon:true,  pct:0.72 },
+  exercise: { icon:'🏃', name:'运动', num:'120', unit:'min', useIcon:false, pct:0.80 },
+  diet:     { icon:'⚖️', name:'体重', num:'+0.3',unit:'kg', useIcon:false, pct:0.85 }
+};
+const goalOrder = ['sleep','status','stress','exercise','diet'];
+
+/* ===== 场景数据：焦点卡 + 其他维度待办 ===== */
+const scenes = {
+  sleep: {
+    alert: { type:'warn', icon:'💛', text:'心率偏高可能跟昨晚没休息好有关，今天别硬撑' },
+    focus: {
+      type: 'sleep',
+      ringNum:'6.2', ringUnit:'小时',
+      headline: '昨晚睡得不太好',
+      story: '深睡只有 48 分钟，比你平时少了近一半。<em>入睡比平时晚了 40 分钟</em>可能是主因——身体恢复时间直接少了 1.3 小时。',
+      reasons: [
+        { type:'down', text:'入睡晚了 40 分钟' },
+        { type:'down', text:'深睡仅 48 min' },
+        { type:'info', text:'卧室偏热 28°C' },
+        { type:'up',   text:'REM 周期正常' }
+      ],
+      cta: { icon:'🌙', title:'今晚 11 点前上床', desc:'补回深睡，明天状态会好很多', btn:'设提醒' },
+      record: { prompt:'入睡晚了，是因为…', tags:['刷手机','加班','焦虑/想事情','喝了咖啡','噪音干扰'] }
+    },
+    todos: [
+      { text:'下午走 15 分钟提提神', meta:'比咖啡更持久', dim:'exercise' },
+      { text:'晚餐少吃碳水', meta:'有助于入睡', dim:'diet' },
+      { text:'睡前 3 分钟呼吸放松', meta:'降低入睡门槛', dim:'stress' }
+    ]
+  },
+  status: {
+    alert: null,
+    focus: {
+      type: 'status',
+      ringNum:'78', ringUnit:'分',
+      headline: '今天状态不错，适合发力',
+      story: '综合睡眠、HRV 和活动量来看，身体准备很充分。<em>昨晚 7.5 小时高质量睡眠</em>是最大功臣，趁状态好多做点事。',
+      reasons: [
+        { type:'up',   text:'昨晚睡了 7.5h' },
+        { type:'up',   text:'深睡比例充足' },
+        { type:'down', text:'久坐超 3 小时' },
+        { type:'info', text:'下午精力可能下降' }
+      ],
+      cta: { icon:'🏃', title:'来一次 30 分钟跑步', desc:'趁状态好效果翻倍', btn:'开始' },
+      record: null
+    },
+    todos: [
+      { text:'每小时起身活动 5 分钟', meta:'对抗久坐', dim:'status' },
+      { text:'记录今天的三餐', meta:'保持好习惯', dim:'diet' },
+      { text:'今晚继续 11 点前睡', meta:'连续早睡第 6 天', dim:'sleep' }
+    ]
+  },
+  stress: {
+    alert: { type:'warn', icon:'😮‍💨', text:'压力持续偏高超 2 小时，起来走走或做几次深呼吸' },
+    focus: {
+      type: 'stress',
+      ringNum:'72', ringUnit:'',
+      headline: '压力比平时高不少',
+      story: '从下午 2 点开始持续上升。<em>连续开了 2.5 小时会</em>加上午休没睡好，身体已经在发信号了。该给自己放松一下。',
+      reasons: [
+        { type:'down', text:'连续会议 2.5h' },
+        { type:'down', text:'午休没睡好' },
+        { type:'info', text:'HRV 低于基线' },
+        { type:'up',   text:'上午状态尚可' }
+      ],
+      cta: { icon:'🧘', title:'3 分钟正念冥想', desc:'跟着引导呼吸，快速平复身心', btn:'开始' },
+      record: { prompt:'压力大，可能是因为…', tags:['工作压力','会议太多','没睡好','人际关系','身体不适'] }
+    },
+    todos: [
+      { text:'出去走 10 分钟换个环境', meta:'散步减压效果很好', dim:'exercise' },
+      { text:'今晚早点睡', meta:'恢复是最好的减压', dim:'sleep' },
+      { text:'喝杯温水别喝咖啡', meta:'咖啡会加重焦虑感', dim:'diet' }
+    ]
+  },
+  exercise: {
+    alert: null,
+    focus: {
+      type: 'exercise',
+      ringNum:'120', ringUnit:'分钟',
+      headline: '快达标了，再走 30 分钟',
+      story: '本周已完成 120 分钟中高强度运动，距 WHO 推荐的 150 分钟<em>只差 30 分钟</em>。下班快走一趟就够了，别在最后一步放弃。',
+      reasons: [
+        { type:'up',   text:'周三跑步 45 min' },
+        { type:'up',   text:'通勤步行达标' },
+        { type:'down', text:'周二周四零运动' },
+        { type:'info', text:'久坐时间偏多' }
+      ],
+      cta: { icon:'🚶', title:'下班后快走 30 分钟', desc:'走完这周就达标了', btn:'开始' },
+      record: null
+    },
+    todos: [
+      { text:'运动后补充蛋白质', meta:'30 分钟内效果最好', dim:'diet' },
+      { text:'今晚好好睡一觉', meta:'运动后恢复很重要', dim:'sleep' },
+      { text:'拉伸 5 分钟防受伤', meta:'别跳过这步', dim:'exercise' }
+    ]
+  },
+  diet: {
+    alert: null,
+    focus: {
+      type: 'diet',
+      ringNum:'+0.3', ringUnit:'kg',
+      headline: '体重小幅反弹了',
+      story: '比上周涨了 0.3kg，不用太紧张。<em>周末聚餐</em>贡献了不少热量，日常饮食控得还不错。这周注意一下就能回来。',
+      reasons: [
+        { type:'down', text:'周末聚餐超标' },
+        { type:'down', text:'脂肪摄入偏高' },
+        { type:'up',   text:'蛋白质 62g 达标' },
+        { type:'up',   text:'运动量充足' }
+      ],
+      cta: { icon:'🥗', title:'晚餐减少一碗米饭', desc:'少 200 大卡就能回到轨道', btn:'记晚餐' },
+      record: { prompt:'体重反弹，可能是因为…', tags:['聚餐/外食','零食吃多了','运动减少','压力大暴食','生理期'] }
+    },
+    todos: [
+      { text:'明天快走 30 分钟', meta:'消耗多余热量', dim:'exercise' },
+      { text:'记录今天三餐', meta:'意识到才能控制', dim:'diet' },
+      { text:'早点睡别吃宵夜', meta:'熬夜 = 饿 = 吃', dim:'sleep' }
+    ]
+  }
+};
+
+/* ===== 紧急预警场景 ===== */
+const urgentScenes = {
+  risk_hr: {
+    urgent: {
+      badge: '紧急',
+      time: '2 分钟前',
+      title: '静止状态下心率持续偏高',
+      desc: '过去 10 分钟静息心率持续高于 120 bpm，且你处于静止状态。如果伴有胸闷、头晕等不适，请立即就医。',
+      primary: { text: '查看详情', action: '→ 心率详情页' },
+      secondary: { text: '联系紧急联系人', action: '→ 拨打紧急联系人' }
+    },
+    // 紧急场景下焦点卡仍展示 AI 推荐，预警在焦点卡上方独立展示
+    focusScene: 'sleep'
+  }
+};
+
+let currentScene = 'sleep';
+
+/* ===== 可视化生成 ===== */
+function vizSleep() {
+  return `<div class="focus-viz">
+    <div class="focus-viz-title">昨晚睡眠分期</div>
+    <div class="sleep-viz-times">
+      <span>入睡 <span class="late">0:20</span></span>
+      <span>起床 6:40</span>
+    </div>
+    <div class="sleep-stages">
+      <div class="sleep-stage stage-awake" style="flex:0.4"></div>
+      <div class="sleep-stage stage-light" style="flex:1.8"></div>
+      <div class="sleep-stage stage-deep" style="flex:0.8"></div>
+      <div class="sleep-stage stage-rem" style="flex:0.9"></div>
+      <div class="sleep-stage stage-light" style="flex:1.5"></div>
+      <div class="sleep-stage stage-deep" style="flex:0.5"></div>
+      <div class="sleep-stage stage-rem" style="flex:0.7"></div>
+      <div class="sleep-stage stage-light" style="flex:1.2"></div>
+      <div class="sleep-stage stage-awake" style="flex:0.3"></div>
+    </div>
+    <div class="sleep-legend">
+      <span class="sleep-legend-item"><span class="sleep-legend-dot" style="background:#1d4ed8"></span>深睡 48m</span>
+      <span class="sleep-legend-item"><span class="sleep-legend-dot" style="background:#93c5fd"></span>浅睡 3.1h</span>
+      <span class="sleep-legend-item"><span class="sleep-legend-dot" style="background:#818cf8"></span>REM 1.4h</span>
+      <span class="sleep-legend-item"><span class="sleep-legend-dot" style="background:#fb923c"></span>清醒 42m</span>
+    </div>
+  </div>`;
+}
+
+function vizStatus() {
+  return `<div class="focus-viz">
+    <div class="focus-viz-title">评分构成</div>
+    <div class="status-bars">
+      <div class="status-bar-row">
+        <span class="sb-label">睡眠</span>
+        <div class="sb-track"><div class="sb-fill" style="width:85%;background:#8b5cf6;border-radius:4px;"></div></div>
+        <span class="sb-val">85</span>
+      </div>
+      <div class="status-bar-row">
+        <span class="sb-label">HRV</span>
+        <div class="sb-track"><div class="sb-fill" style="width:72%;background:#10b981;border-radius:4px;"></div></div>
+        <span class="sb-val">72</span>
+      </div>
+      <div class="status-bar-row">
+        <span class="sb-label">活动量</span>
+        <div class="sb-track"><div class="sb-fill" style="width:68%;background:#3b82f6;border-radius:4px;"></div></div>
+        <span class="sb-val">68</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function vizStress() {
+  // 24h stress curve, spike at afternoon
+  const w = 300, h = 50;
+  const points = [
+    [0,35],[25,32],[50,30],[75,28],[100,26],[125,25],[137,28],[150,34],
+    [162,40],[175,44],[187,46],[200,43],[212,42],[225,44],[250,40],[275,36],[300,34]
+  ];
+  const path = points.map((p,i) => (i===0?'M':'L')+p[0]+','+p[1]).join(' ');
+  const area = path + ` L300,${h} L0,${h} Z`;
+  // baseline
+  const baseline = 32;
+  return `<div class="focus-viz">
+    <div class="focus-viz-title">今日压力曲线</div>
+    <svg width="100%" viewBox="0 0 ${w} ${h+4}" style="display:block;">
+      <defs>
+        <linearGradient id="stressGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="${baseline}" x2="${w}" y2="${baseline}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4,3"/>
+      <path d="${area}" fill="url(#stressGrad)"/>
+      <path d="${path}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="187" cy="46" r="3.5" fill="#f59e0b"/>
+      <text x="192" y="50" font-size="8" fill="#d97706" font-weight="600">偏高</text>
+      <text x="${w-2}" y="${baseline-3}" text-anchor="end" font-size="7" fill="#d1d5db">日常水平</text>
+    </svg>
+    <div class="stress-viz-labels">
+      <span>6:00</span><span>9:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>现在</span>
+    </div>
+  </div>`;
+}
+
+function vizExercise() {
+  const days = [
+    { label:'一', val:30, color:'#3b82f6' },
+    { label:'二', val:0,  color:'#e5e7eb' },
+    { label:'三', val:45, color:'#3b82f6' },
+    { label:'四', val:0,  color:'#e5e7eb' },
+    { label:'五', val:25, color:'#60a5fa' },
+    { label:'六', val:20, color:'#60a5fa' },
+    { label:'日', val:0,  color:'#e5e7eb' }
+  ];
+  const max = 50;
+  return `<div class="focus-viz">
+    <div class="focus-viz-title">本周运动分布</div>
+    <div class="ex-week">
+      ${days.map(d => {
+        const h = d.val > 0 ? Math.max(d.val / max * 44, 4) : 3;
+        return `<div class="ex-day">
+          <div class="ex-bar-wrap">
+            <div class="ex-bar" style="height:${h}px;background:${d.color};"></div>
+          </div>
+          <div class="ex-day-label">周${d.label}</div>
+          ${d.val > 0 ? `<div class="ex-day-val">${d.val}m</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function vizDiet() {
+  // 7-day weight trend
+  const w = 300, h = 44;
+  const weights = [65.2, 65.0, 64.8, 64.9, 65.0, 65.4, 65.5];
+  const minW = 64.5, maxW = 65.8, rangeW = maxW - minW;
+  const points = weights.map((v, i) => {
+    const x = i * (w / 6);
+    const y = h - ((v - minW) / rangeW) * (h - 8) - 4;
+    return [x, y];
+  });
+  const path = points.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const dayLabels = ['一','二','三','四','五','六','日'];
+  return `<div class="focus-viz">
+    <div class="focus-viz-title">本周体重趋势</div>
+    <svg width="100%" viewBox="0 0 ${w} ${h}" style="display:block;">
+      <defs>
+        <linearGradient id="wtGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ec4899" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#ec4899" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${path} L${w},${h} L0,${h} Z" fill="url(#wtGrad)"/>
+      <path d="${path}" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${points.map((p,i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===6?4:2.5}" fill="${i>=5?'#ec4899':'#f9a8d4'}"/>`).join('')}
+      <text x="${points[6][0]}" y="${points[6][1]-8}" text-anchor="middle" font-size="9" font-weight="700" fill="#ec4899">65.5</text>
+      <text x="${points[2][0]}" y="${points[2][1]-7}" text-anchor="middle" font-size="8" fill="#8e8e93">64.8</text>
+    </svg>
+    <div class="wt-labels">
+      ${dayLabels.map(d => `<span>周${d}</span>`).join('')}
+    </div>
+    <div class="wt-change up">↑ 比上周 +0.3kg</div>
+  </div>`;
+}
+
+const vizMap = { sleep: vizSleep, status: vizStatus, stress: vizStress, exercise: vizExercise, diet: vizDiet };
+
+/* ===== SVG 圆环 ===== */
+function ring(type, size) {
+  const r = size === 'lg' ? 28 : size === 'md' ? 22 : 17;
+  const sw = size === 'lg' ? 5.5 : size === 'md' ? 4 : 3.5;
+  const circ = 2 * Math.PI * r;
+  const pct = goals[type].pct;
+  const dash = circ * pct;
+  const gap = circ - dash;
+  const s = (r + sw + 1) * 2;
+  const cx = r + sw + 1;
+  const w = size === 'lg' ? 72 : size === 'md' ? 56 : 44;
+  const c = CLR[type];
+  return `<svg width="${w}" height="${w}" viewBox="0 0 ${s} ${s}">
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${c.track}" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${c.main}" stroke-width="${sw}"
+      stroke-dasharray="${dash} ${gap}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cx})">
+      <animate attributeName="stroke-dasharray" from="0 ${circ}" to="${dash} ${gap}" dur="0.7s" fill="freeze"/>
+    </circle>
+  </svg>`;
+}
+
+/* ===== Toast ===== */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+/* ===== 渲染五环（不切换焦点卡，点击跳详情页） ===== */
+function renderGoals() {
+  const items = goalOrder.map(type => {
+    const g = goals[type];
+    const inner = g.useIcon
+      ? `<span class="g-icon">${g.icon}</span>`
+      : `<div class="g-val-wrap"><span class="gv-num">${g.num}</span><span class="gv-unit">${g.unit}</span></div>`;
+    return `<div class="goal-item" onclick="showToast('跳转到「${g.name}」详情页 →')">
+      <div class="g-ring">
+        ${ring(type, 'md')}
+        ${inner}
+      </div>
+      <span class="g-name">${g.name}</span>
+    </div>`;
+  }).join('');
+  const editBtn = `<div class="goals-edit-item" onclick="showToast('长按拖动可调整顺序')">
+    <div class="ge-circle">✎</div>
+    <span class="ge-label">编辑</span>
+  </div>`;
+  document.getElementById('goalsStrip').innerHTML = items + editBtn;
+}
+
+/* ===== 渲染焦点卡 ===== */
+function renderFocus(scene) {
+  const s = scenes[scene];
+  const f = s.focus;
+  const c = CLR[f.type];
+
+  // Alert
+  const area = document.getElementById('alertArea');
+  if (s.alert) {
+    area.innerHTML = `<div class="alert-bar ${s.alert.type}">
+      <span class="alert-icon">${s.alert.icon}</span>
+      <span class="alert-text">${s.alert.text}</span>
+      <span class="alert-arrow">›</span>
+    </div>`;
+  } else {
+    area.innerHTML = '';
+  }
+
+  // Focus card
+  const card = document.getElementById('focusCard');
+  card.innerHTML = `
+    <div class="focus-top">
+      <div class="focus-dim-row">
+        <div class="focus-dim-icon" style="background:${c.bg}">${goals[f.type].icon}</div>
+        <span class="focus-dim-label" style="color:${c.main}">${goals[f.type].name}目标</span>
+      </div>
+      <div class="focus-headline">${f.headline}</div>
+    </div>
+    <div class="focus-story">${f.story}</div>
+    ${vizMap[f.type] ? vizMap[f.type]() : ''}
+    <div class="focus-reasons">
+      ${f.reasons.map(r =>
+        `<span class="reason-chip ${r.type}">${r.type==='up'?'↑':r.type==='down'?'↓':'→'} ${r.text}</span>`
+      ).join('')}
+    </div>
+    <div class="focus-cta" style="background:${c.bg}">
+      <div class="focus-cta-icon">${f.cta.icon}</div>
+      <div class="focus-cta-body">
+        <div class="focus-cta-title">${f.cta.title}</div>
+        <div class="focus-cta-desc">${f.cta.desc}</div>
+      </div>
+      <button class="focus-cta-btn" style="background:${c.main}">${f.cta.btn}</button>
+    </div>
+    ${f.record ? `
+    <div class="focus-record" onclick="event.stopPropagation()">
+      <div class="focus-record-icon">📝</div>
+      <div class="focus-record-body">
+        <div class="focus-record-title"><em>${f.record.prompt}</em></div>
+        <div class="focus-record-tags">
+          ${f.record.tags.map(t => `<span class="focus-record-tag" onclick="this.classList.toggle('selected');showToast('已记录：${t}')">${t}</span>`).join('')}
+        </div>
+      </div>
+    </div>` : ''}`;
+  card.className = 'focus-card fade';
+}
+
+/* ===== 渲染待办（只放其他维度的建议） ===== */
+function renderTodos(scene) {
+  const todos = scenes[scene].todos;
+  document.getElementById('todoList').innerHTML = todos.map((t, i) => {
+    const c = CLR[t.dim] || CLR.status;
+    const dimName = goals[t.dim]?.name || '';
+    return `<div class="todo-row" onclick="toggleTodo(${i})">
+      <div class="todo-check" id="tc${i}"></div>
+      <div style="flex:1">
+        <div class="todo-text" id="tt${i}">${t.text}</div>
+        <div class="todo-meta">${t.meta}</div>
+      </div>
+      <span class="todo-tag" style="background:${c.tagBg};color:${c.tagColor}">${dimName}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleTodo(i) {
+  const ck = document.getElementById('tc' + i);
+  const tx = document.getElementById('tt' + i);
+  const done = ck.classList.toggle('done');
+  tx.classList.toggle('done', done);
+  ck.textContent = done ? '✓' : '';
+}
+
+/* ===== 渲染紧急预警 ===== */
+function renderUrgent(urgentData) {
+  const area = document.getElementById('alertArea');
+  const u = urgentData;
+  area.innerHTML = `<div class="alert-urgent fade">
+    <div class="alert-urgent-top">
+      <span class="alert-urgent-badge">${u.badge}</span>
+      <span class="alert-urgent-time">${u.time}</span>
+    </div>
+    <div class="alert-urgent-title">${u.title}</div>
+    <div class="alert-urgent-desc">${u.desc}</div>
+    <div class="alert-urgent-actions">
+      <button class="alert-urgent-btn primary" onclick="showToast('${u.primary.action}')">${u.primary.text}</button>
+      <button class="alert-urgent-btn secondary" onclick="showToast('${u.secondary.action}')">${u.secondary.text}</button>
+    </div>
+  </div>`;
+}
+
+/* ===== 场景切换（仅 demo 面板触发） ===== */
+function switchScene(scene) {
+  currentScene = scene;
+
+  // 判断是否为紧急预警场景
+  if (urgentScenes[scene]) {
+    const us = urgentScenes[scene];
+    renderUrgent(us.urgent);
+    renderFocus(us.focusScene);
+    renderTodos(us.focusScene);
+  } else {
+    renderFocus(scene);
+    renderTodos(scene);
+  }
+
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.demo-btn[onclick="switchScene('${scene}')"]`);
+  if (btn) btn.classList.add('active');
+  document.querySelector('.scroll').scrollTop = 0;
+}
+
+/* ===== FAB ===== */
+function toggleFab() {
+  const o = document.getElementById('fabOverlay');
+  const b = document.getElementById('fabBtn');
+  o.classList.toggle('show');
+  b.textContent = o.classList.contains('show') ? '✕' : '+';
+}
+
+/* ===== Init ===== */
+renderGoals();
+switchScene('sleep');
+</script>
+</body>
+</html>
